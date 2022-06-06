@@ -92,7 +92,8 @@
 }
 
 
-.post__ready {
+.post__ready,
+.post__ready_to_delete {
     position: absolute;
     right: 10px;
     bottom: 10px;

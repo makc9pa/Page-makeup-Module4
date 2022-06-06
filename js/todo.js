@@ -2,8 +2,8 @@ export const todo = () => {
     const todoForm = document.querySelector('#form-todo');
     const author = document.getElementById('author');
     const post = document.getElementById('post');
-    const list = document.querySelector('.todo__list');
     const count = document.querySelector('.todo__count');
+    let list = document.querySelector('.todo__list');
 
     const base = {
         init() {
@@ -14,16 +14,18 @@ export const todo = () => {
             for (let i = 0; i < this.todo.length; i++) {
                 if (this.todo[i].id === id) {
                     this.todo[i].ready = true;
+                    this.todo[i].forRemove = true;
                 }
             }
             this.setTodoLS();
-        },
+        }, 
         addTodo(author, post) {
             const todo = {
                 id: 'td' + (Date.now()),
                 author,
                 post,
                 ready: false,
+                forRemove: false
             }
             this.todo.push(todo);
             this.setTodoLS();
@@ -33,11 +35,18 @@ export const todo = () => {
             if (localStorage.getItem('todo')) {
                 return JSON.parse(localStorage.getItem('todo'));
             }
-        
-            return []
+            return [];
         },
         setTodoLS() {
-            localStorage.setItem('todo', JSON.stringify(this.todo))
+            localStorage.setItem('todo', JSON.stringify(this.todo));
+        },
+        deleteTodoLS(removableId) {
+            const storedLS = JSON.parse(localStorage.getItem('todo'));
+            const ids = storedLS.map(item => item.id);
+            const index = ids.findIndex(id => id == removableId);
+
+            storedLS.splice(index, 1);
+            localStorage.setItem('todo', JSON.stringify(storedLS));
         }
     };
 
@@ -65,7 +74,10 @@ export const todo = () => {
                     type="button"
                     data-id="${id}"
                     >✔</button>` :
-                    ''
+                    `<button class="post__ready_to_delete"
+                    type="button"
+                    data-id="${id}"
+                    >X</button>`
                 }
             </article>`;
 
@@ -78,25 +90,43 @@ export const todo = () => {
 
     const renderTodo = () => {
         base.init();
+
         for (let i=0; i < base.todo.length; i++) {
             const todoLi = createTodo(base.todo[i]);
             list.append(todoLi);
         }
     };
 
-    const renderCount = () => {
-        count.textContent = changeCount();
+    const removeTodoLi = () => {
+        list.innerHTML = '';
     }
 
-    const checkTodo = e => {
-        const btn = e.target.closest('.post__ready');
+    const renderCount = () => {
+        count.textContent = changeCount();
+    };
 
-        if (btn) {
-            const post = btn.closest('.post');
-            btn.remove();
+    const checkTodo = e => {
+        const btnReady = e.target.closest('.post__ready');
+        const btnDelete = e.target.closest('.post__ready_to_delete');
+
+        if (btnReady) {
+            const post = btnReady.closest('.post');
+            const id = btnReady.dataset.id;
+
             post.classList.add('post_complete');
-            const id = btn.dataset.id;
+            btnReady.classList.remove('post__ready');
+            btnReady.classList.add('post__ready_to_delete');
+            btnReady.textContent = 'X';
             base.check(id);
+        }
+
+        if (btnDelete) {
+            const id = btnDelete.dataset.id;
+            btnDelete.remove();
+            base.deleteTodoLS(id);
+            removeTodoLi();
+            renderTodo();
+            renderCount();
         }
     };
 
